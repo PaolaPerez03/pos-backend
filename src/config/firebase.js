@@ -2,7 +2,7 @@ import admin from "firebase-admin";
 import dotenv from "dotenv";
 import path from "path";
 
-// Cargar el .env desde el root del proyecto
+// Cargar .env
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const { PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
@@ -18,9 +18,11 @@ const serviceAccount = {
     client_email: FIREBASE_CLIENT_EMAIL,
 };
 
+// Inicializar admin solo una vez
 if (!admin.apps.length) {
     admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: `https://${PROJECT_ID}.firebaseio.com`,  // 🔥 IMPORTANTE
     });
 }
 

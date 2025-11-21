@@ -2,6 +2,65 @@ import admin from "../config/firebase.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+
+// Registro
+export const registerUser = async (req, res) => {
+    try {
+        const { email, password, role, name } = req.body;
+
+        if (!email || !password || !role || !name) {
+            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        }
+
+        const auth = admin.auth();
+
+        // Verificar si el usuario ya existe en Auth
+        try {
+            await auth.getUserByEmail(email);
+            return res.status(400).json({ error: "El usuario ya existe" });
+        } catch (err) {
+            // Si no existe, Firebase lanza error: lo ignoramos
+        }
+
+        // Crear usuario en Firebase Auth
+        const newUser = await auth.createUser({
+            email,
+            password,
+        });
+
+        // 🔐 Generar hash para guardar en Firestore
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Guardar información en Firestore
+        const db = admin.firestore();
+        await db.collection("users").doc(newUser.uid).set({
+            email,
+            name,
+            role,
+            password: hashedPassword, // 🔥 ahora sí existe
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Crear token
+        const token = jwt.sign(
+            { uid: newUser.uid, email, role },
+            process.env.JWT_SECRET,
+            { expiresIn: "2h" }
+        );
+
+        res.status(201).json({
+            message: "Usuario registrado correctamente",
+            token,
+            user: { uid: newUser.uid, email, name, role },
+        });
+
+    } catch (error) {
+        console.error("Error en registerUser:", error);
+        res.status(500).json({ error: "Error interno en registro" });
+    }
+};
+
+// Login
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -50,7 +109,9 @@ export const loginUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error interno en login" });
+        console.error(error); // <-- imprime el error real en consola
+        res.status(500).json({ error: error.message }); // <-- envía el mensaje real al cliente
+        //console.error(error);
+        //res.status(500).json({ error: "Error interno en login" });
     }
 };
