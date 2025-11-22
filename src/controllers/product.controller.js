@@ -9,7 +9,7 @@ export const createProduct = async (req, res) => {
     try {
         const { codigo, nombre, stock, descripcion, categoria } = req.body;
 
-        if (!codigo || !nombre || stock === undefined || !categoria) {
+        if (!codigo || !nombre || stock === undefined || !categoria) {  
             return res.status(400).json({ error: "Faltan campos obligatorios" });
         }
 
