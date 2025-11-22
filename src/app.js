@@ -5,6 +5,8 @@ import cors from 'cors';
 dotenv.config(); // carga el .env
 
 import authRoutes from './routes/auth.routes.js'; 
+import adminRoutes from "./routes/admin.routes.js";
+import productRoutes from "./routes/product.routes.js";
 
 const app = express();
 
@@ -14,6 +16,12 @@ app.use(express.json());
 
 // Rutas del sistema
 app.use('/api/auth', authRoutes);
+
+// Rutas solo para admin
+app.use("/api/admin", adminRoutes);
+
+// Rutas para obtener productos
+app.use("/api/products", productRoutes);
 
 // Ruta inicial para probar el servidor
 app.get('/', (req, res) => {
