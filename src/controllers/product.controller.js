@@ -2,46 +2,33 @@ import admin from "../config/firebase.js";
 const db = admin.firestore();
 
 // Referencia a la colección de productos
-const productsRef = admin.firestore().collection("products");
+const productsRef = db.collection("products");
 
 // Crear producto
 export const createProduct = async (req, res) => {
     try {
-        const { codigo, nombre, stock, descripcion, categoria } = req.body;
+        const { codigo, nombre, descripcion, stock, categoria, precio } = req.body;
 
-        if (!codigo || !nombre || stock === undefined || !categoria) {  
-            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        if (!codigo || !nombre || !stock || !precio) {
+            return res.status(400).json({ error: "codigo, nombre, stock y precio son requeridos" });
         }
 
-        const db = admin.firestore();
-        const productsRef = db.collection("products");
-
-        // Verificar si ya existe un producto con ese código
-        const existing = await productsRef.where("codigo", "==", codigo).get();
-
-        if (!existing.empty) {
-            return res.status(400).json({ error: "El código ya está registrado" });
-        }
-
-        const nuevoProducto = {
+        const newProduct = {
             codigo,
             nombre,
-            stock,
             descripcion: descripcion || "",
-            categoria,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            stock,
+            categoria: categoria || "",
+            precio,
+            creado_en: new Date()
         };
 
-        await productsRef.add(nuevoProducto);
+        const docRef = await productsRef.add(newProduct);
 
-        res.status(201).json({
-            message: "Producto creado correctamente",
-            producto: nuevoProducto,
-        });
-
+        return res.json({ id: docRef.id, ...newProduct });
     } catch (error) {
         console.error("Error en createProduct:", error);
-        res.status(500).json({ error: "Error interno en el servidor" });
+        return res.status(500).json({ error: "Error al crear producto" });
     }
 };
 
@@ -82,28 +69,25 @@ export const getProductById = async (req, res) => {
 // Actualizar producto
 export const updateProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { codigo, nombre, stock, descripcion } = req.body;
+        const id = req.params.id;
+        const { codigo, nombre, descripcion, stock, categoria, precio } = req.body;
 
-        const docRef = productsRef.doc(id);
-        const doc = await docRef.get();
+        const updatedData = {
+            ...(codigo && { codigo }),
+            ...(nombre && { nombre }),
+            ...(descripcion && { descripcion }),
+            ...(stock && { stock }),
+            ...(categoria && { categoria }),
+            ...(precio && { precio }),
+            actualizado_en: new Date()
+        };
 
-        if (!doc.exists) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
+        await productsRef.doc(id).update(updatedData);
 
-        await docRef.update({
-            codigo,
-            nombre,
-            stock,
-            descripcion,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        res.json({ message: "Producto actualizado" });
+        return res.json({ id, ...updatedData });
     } catch (error) {
         console.error("Error en updateProduct:", error);
-        res.status(500).json({ error: "Error interno al actualizar producto" });
+        return res.status(500).json({ error: "Error al actualizar producto" });
     }
 };
 

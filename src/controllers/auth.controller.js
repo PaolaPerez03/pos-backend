@@ -103,6 +103,7 @@ export const loginUser = async (req, res) => {
             message: "Login exitoso",
             token,
             user: {
+                name: userData.name,
                 email: userData.email,
                 role: userData.role
             }
