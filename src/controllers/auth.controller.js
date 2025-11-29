@@ -103,6 +103,7 @@ export const loginUser = async (req, res) => {
             message: "Login exitoso",
             token,
             user: {
+                uid: userSnapshot.docs[0].id,
                 name: userData.name,
                 email: userData.email,
                 role: userData.role
