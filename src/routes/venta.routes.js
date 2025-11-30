@@ -8,6 +8,7 @@ import {
     descontarStock,
     getArqueo
 } from "../controllers/venta.controller.js";
+
 import { crearCorte } from "../controllers/corte.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";

@@ -107,6 +107,101 @@ export const getVentas = async (req, res) => {
     }
 };
 
+// Obtener ventas por día
+export const ventasPorDia = async (req, res) => {
+    try {
+        const { fecha } = req.params;
+        const inicio = new Date(`${fecha}T00:00:00`);
+        const fin = new Date(`${fecha}T23:59:59`);
+
+        const snapshot = await ventasRef
+            .where("fecha", ">=", inicio)
+            .where("fecha", "<=", fin)
+            .get();
+
+        // 🔹 Aquí hacemos la conversión de fecha
+        const ventas = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                fecha: new Date(data.fecha._seconds * 1000).toLocaleDateString(),  // solo fecha
+                hora: new Date(data.fecha._seconds * 1000).toLocaleTimeString()   // solo hora
+            };
+        });
+
+        res.json({ ventas });
+
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener ventas del día" });
+    }
+};
+
+// Obtener ventas por mes
+export const ventasPorMes = async (req, res) => {
+  try {
+    const { anio, mes } = req.params;
+    const inicio = new Date(`${anio}-${mes}-01T00:00:00`);
+    const fin = new Date(`${anio}-${mes}-31T23:59:59`);
+
+    const snapshot = await ventasRef
+      .where("fecha", ">=", inicio)
+      .where("fecha", "<=", fin)
+      .orderBy("fecha", "asc")
+      .get();
+
+    const diasMap = {}; // { dia: total }
+    let totalMes = 0;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const fecha = data.fecha.toDate();
+      const dia = fecha.getDate();
+      const total = data.total || 0;
+
+      totalMes += total;
+
+      if (!diasMap[dia]) diasMap[dia] = 0;
+      diasMap[dia] += total;
+    });
+
+    const dias = Object.keys(diasMap).map(d => ({
+      dia: Number(d),
+      total: diasMap[d]
+    }));
+
+    res.json({ total: totalMes, dias });
+  } catch (error) {
+    console.error("Error en ventasPorMes:", error);
+    res.status(500).json({ error: "Error obteniendo ventas por mes" });
+  }
+};
+
+// Producto más vendido
+export const productoMasVendido = async (req, res) => {
+    try {
+        const snapshot = await detallesRef.get();
+
+        const conteo = {};
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            if (!conteo[d.producto_id]) {
+                conteo[d.producto_id] = {
+                    nombre: d.nombre_producto,
+                    cantidad: 0
+                };
+            }
+            conteo[d.producto_id].cantidad += d.cantidad;
+        });
+        const lista = Object.values(conteo)
+            .sort((a, b) => b.cantidad - a.cantidad);
+        res.json(lista[0]); // el top
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener producto más vendido" });
+    }
+};
+
 // Obtener detalles por venta
 export const getDetallesByVenta = async (req, res) => {
     try {

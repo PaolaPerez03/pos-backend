@@ -80,3 +80,13 @@ export const crearCorte = async (req, res) => {
     res.status(500).json({ error: "Error al generar el corte de caja" });
   }
 };
+
+export const getCortes = async (req, res) => {
+    try {
+        const snapshot = await cortesRef.orderBy("fecha_fin", "desc").get();
+        const cortes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(cortes);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener cortes" });
+    }
+};
